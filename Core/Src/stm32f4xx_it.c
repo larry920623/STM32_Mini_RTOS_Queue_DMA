@@ -22,6 +22,7 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "os.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,30 +52,12 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void OS_Schedule(void);
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern DMA_HandleTypeDef hdma_usart1_tx;
+extern UART_HandleTypeDef huart1;
 /* USER CODE BEGIN EV */
-#define TASK_READY   0
-#define TASK_BLOCKED 1
-
-typedef struct {
-    uint32_t *psp;
-    volatile uint32_t delay_ticks;
-    volatile uint8_t state;
-} TCB_t;
-
-extern TCB_t *current_tcb;
-extern TCB_t *next_tcb;
-extern TCB_t tcb1;
-extern TCB_t tcb2;
-extern TCB_t *current_tcb;
-extern TCB_t *next_tcb;
-extern TCB_t tcb1;
-extern TCB_t tcb2;
-extern TCB_t tcb_idle;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -191,12 +174,7 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-  if (current_tcb != NULL) {
-        if (tcb1.delay_ticks > 0) tcb1.delay_ticks--;
-        if (tcb2.delay_ticks > 0) tcb2.delay_ticks--;
-
-        OS_Schedule();
-    }
+  OS_Tick();
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -207,24 +185,33 @@ void SysTick_Handler(void)
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
 
-/* USER CODE BEGIN 1 */
-void OS_Schedule(void) {
-    if (current_tcb == &tcb1) {
-        if (tcb2.delay_ticks == 0 && tcb2.state == TASK_READY) next_tcb = &tcb2;
-        else if (tcb1.delay_ticks == 0 && tcb1.state == TASK_READY) next_tcb = &tcb1;
-        else next_tcb = &tcb_idle;
-    } else if (current_tcb == &tcb2) {
-        if (tcb1.delay_ticks == 0 && tcb1.state == TASK_READY) next_tcb = &tcb1;
-        else if (tcb2.delay_ticks == 0 && tcb2.state == TASK_READY) next_tcb = &tcb2;
-        else next_tcb = &tcb_idle;
-    } else {
-        if (tcb1.delay_ticks == 0 && tcb1.state == TASK_READY) next_tcb = &tcb1;
-        else if (tcb2.delay_ticks == 0 && tcb2.state == TASK_READY) next_tcb = &tcb2;
-        else next_tcb = &tcb_idle;
-    }
+/**
+  * @brief This function handles USART1 global interrupt.
+  */
+void USART1_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART1_IRQn 0 */
 
-    if (current_tcb != next_tcb) {
-        *(volatile uint32_t *)0xE000ED04 |= (1 << 28);
-    }
+  /* USER CODE END USART1_IRQn 0 */
+  HAL_UART_IRQHandler(&huart1);
+  /* USER CODE BEGIN USART1_IRQn 1 */
+
+  /* USER CODE END USART1_IRQn 1 */
 }
+
+/**
+  * @brief This function handles DMA2 stream7 global interrupt.
+  */
+void DMA2_Stream7_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream7_IRQn 0 */
+
+  /* USER CODE END DMA2_Stream7_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart1_tx);
+  /* USER CODE BEGIN DMA2_Stream7_IRQn 1 */
+
+  /* USER CODE END DMA2_Stream7_IRQn 1 */
+}
+
+/* USER CODE BEGIN 1 */
 /* USER CODE END 1 */
